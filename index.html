@@ -4,179 +4,354 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Workouts" />
-  <title>Workout Tracker</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PPL-UL Tracker" />
+  <title>PPL + Upper/Lower Workout Tracker</title>
 
-  <!-- Supabase CDN -->
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #222f49;
+      --danger: #ef4444;
+      --tag-bg: #1e293b;
+      --tag-text: #38bdf8;
+    }
+
     * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0;
-      padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-      background: #0f172a;
-      color: #f8fafc;
+      background: var(--bg);
+      color: var(--text);
+      padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
       display: flex;
       justify-content: center;
     }
-    .container {
+    .app-container {
       width: 100%;
-      max-width: 420px;
+      max-width: 600px;
     }
-    h2 { margin: 12px 0 20px; font-size: 1.4rem; text-align: center; }
-    .form-group { margin-bottom: 12px; }
-    label {
-      display: block;
-      font-size: 0.75rem;
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      margin: 4px 0;
+      font-size: 1.4rem;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin: 0;
+    }
+
+    /* Day Selector Tabs */
+    .day-nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+    .day-nav::-webkit-scrollbar { display: none; }
+    .day-btn {
+      flex: 0 0 auto;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      border-radius: 20px;
+      font-size: 0.85rem;
       font-weight: 600;
-      margin-bottom: 4px;
-      color: #94a3b8;
-      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .day-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Exercise Table Cards */
+    .exercise-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .exercise-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .exercise-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+    .target-badge {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    /* Log Inputs Grid */
+    .log-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
     }
     input {
       width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #1e293b;
+      background: #0d1322;
+      border: 1px solid var(--border);
       color: #fff;
-      font-size: 1rem;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      text-align: center;
     }
-    .grid { display: flex; gap: 10px; }
-    .grid .form-group { flex: 1; }
-    button {
-      width: 100%;
-      padding: 14px;
-      background: #3b82f6;
-      color: white;
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .btn-log {
+      background: var(--accent);
+      color: #fff;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      padding: 8px 14px;
+      border-radius: 6px;
       font-weight: 600;
+      font-size: 0.85rem;
       cursor: pointer;
-      margin-top: 6px;
     }
-    button:active { background: #2563eb; }
-    hr { border: 0; border-top: 1px solid #334155; margin: 24px 0; }
-    .log-list { display: flex; flex-direction: column; gap: 8px; }
-    .log-item {
-      background: #1e293b;
-      padding: 12px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid #334155;
+    .btn-log:active { background: var(--accent-hover); }
+
+    /* Set History Table */
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.8rem;
     }
-    .log-info strong { display: block; font-size: 1rem; }
-    .log-info span { color: #94a3b8; font-size: 0.8rem; }
+    .history-table th {
+      text-align: left;
+      color: var(--text-muted);
+      font-weight: 500;
+      padding: 4px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-table td {
+      padding: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
     .del-btn {
       background: none;
       border: none;
-      color: #ef4444;
-      font-size: 1.1rem;
+      color: var(--danger);
+      font-size: 0.9rem;
       cursor: pointer;
-      width: auto;
-      padding: 6px;
-      margin: 0;
+      padding: 0 4px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🏋️ Workout Tracker</h2>
+  <div class="app-container">
+    <header>
+      <h1>Push • Pull • Legs • Upper • Lower</h1>
+      <p>Select your day, track weights & reps</p>
+    </header>
 
-    <form id="workout-form">
-      <div class="form-group">
-        <label for="exercise">Exercise</label>
-        <input type="text" id="exercise" placeholder="e.g. Barbell Squat" required />
-      </div>
-      <div class="grid">
-        <div class="form-group">
-          <label for="weight">Weight (kg/lbs)</label>
-          <input type="number" id="weight" step="0.5" placeholder="80" required />
-        </div>
-        <div class="form-group">
-          <label for="reps">Reps</label>
-          <input type="number" id="reps" placeholder="8" required />
-        </div>
-      </div>
-      <button type="submit" id="save-btn">Log Set</button>
-    </form>
+    <!-- Day Navigation -->
+    <nav class="day-nav" id="day-tabs">
+      <button class="day-btn active" data-day="push">Push</button>
+      <button class="day-btn" data-day="pull">Pull</button>
+      <button class="day-btn" data-day="legs">Legs</button>
+      <button class="day-btn" data-day="upper">Upper</button>
+      <button class="day-btn" data-day="lower">Lower</button>
+    </nav>
 
-    <hr />
-
-    <div class="log-list" id="log-list"></div>
+    <!-- Workout List -->
+    <div id="exercise-list"></div>
   </div>
 
   <script>
-    // Paste your Supabase project details here:
-    const SUPABASE_URL = 'https://bkplhjwykyryijrmnawr.supabase.co/rest/v1/';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrcGxoand5a3lyeWlqcm1uYXdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NDc4MDAsImV4cCI6MjEwNTAyMzgwMH0.kgzeibHF7B5brHAwdzpVfId3nVzrN79A8q-sVu8dE98';
+    // 1. SETUP YOUR SUPABASE KEYS:
+    const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
+    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const form = document.getElementById('workout-form');
-    const logList = document.getElementById('log-list');
+    // 2. 5-DAY PPL + UPPER/LOWER WORKOUT ROUTINE DATA
+    const ROUTINES = {
+      push: [
+        { name: "Barbell Incline / Flat Bench Press", target: "3–4 Sets × 6–8 Reps" },
+        { name: "Dumbbell Overhead Shoulder Press", target: "3 Sets × 8–10 Reps" },
+        { name: "Dips or Flat Dumbbell Press", target: "3 Sets × 8–12 Reps" },
+        { name: "Cable Lateral Raises", target: "4 Sets × 12–15 Reps" },
+        { name: "Triceps Rope Pushdowns", target: "3 Sets × 10–12 Reps" },
+        { name: "Overhead Triceps Extension", target: "3 Sets × 12–15 Reps" }
+      ],
+      pull: [
+        { name: "Barbell Conventional / Trap-Bar Deadlift", target: "3 Sets × 5–6 Reps" },
+        { name: "Chest-Supported Row / Barbell Row", target: "3–4 Sets × 6–8 Reps" },
+        { name: "Lat Pulldown / Neutral-Grip Pull-ups", target: "3 Sets × 8–10 Reps" },
+        { name: "Face Pulls / Rear Delt Cable Flyes", target: "4 Sets × 12–15 Reps" },
+        { name: "Incline Dumbbell Bicep Curls", target: "3 Sets × 8–10 Reps" },
+        { name: "Hammer Curls (Rope or Dumbbell)", target: "3 Sets × 10–12 Reps" }
+      ],
+      legs: [
+        { name: "Barbell Back Squat / Hack Squat", target: "3–4 Sets × 6–8 Reps" },
+        { name: "Romanian Deadlift (RDL)", target: "3–4 Sets × 8–10 Reps" },
+        { name: "Bulgarian Split Squats / Leg Press", target: "3 Sets × 10–12 Reps" },
+        { name: "Lying or Seated Hamstring Curls", target: "3 Sets × 10–12 Reps" },
+        { name: "Standing / Seated Calf Raises", target: "4 Sets × 12–15 Reps" },
+        { name: "Hanging Leg Raises / Cable Crunches", target: "3 Sets × 12–15 Reps" }
+      ],
+      upper: [
+        { name: "Standing Overhead Barbell Press", target: "3 Sets × 6–8 Reps" },
+        { name: "Weighted Pull-ups or Lat Pulldowns", target: "3–4 Sets × 8–10 Reps" },
+        { name: "Incline Dumbbell Bench Press", target: "3 Sets × 8–10 Reps" },
+        { name: "Chest-Supported T-Bar / Cable Row", target: "3 Sets × 10–12 Reps" },
+        { name: "Dumbbell Lateral Raises", target: "4 Sets × 12–15 Reps" },
+        { name: "EZ-Bar Preacher Curls + Skull Crushers (Superset)", target: "3 Sets × 10–12 Reps" }
+      ],
+      lower: [
+        { name: "Front Squats or Leg Press (Quad Focus)", target: "3–4 Sets × 8–10 Reps" },
+        { name: "Dumbbell Romanian Deadlift (RDL)", target: "3–4 Sets × 8–10 Reps" },
+        { name: "Walking Lunges (Dumbbells)", target: "3 Sets × 10–12 Steps/Leg" },
+        { name: "Leg Extensions", target: "3 Sets × 12–15 Reps" },
+        { name: "Standing Calf Raises", target: "4 Sets × 12–15 Reps" },
+        { name: "Abdominal Planks / Cable Woodchoppers", target: "3 Sets × 45s / 12 Reps" }
+      ]
+    };
 
-    // Fetch and display workouts
-    async function loadWorkouts() {
-      const { data, error } = await db
-        .from('workouts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
+    let currentDay = "push";
+    let cachedLogs = [];
 
-      if (error) return console.error(error);
+    // 3. UI RENDERING
+    function renderDay(day) {
+      currentDay = day;
+      const list = document.getElementById("exercise-list");
+      list.innerHTML = "";
 
-      logList.innerHTML = '';
-      if (!data || data.length === 0) {
-        logList.innerHTML = '<p style="text-align:center; color:#64748b;">No workouts recorded yet.</p>';
-        return;
-      }
+      const exercises = ROUTINES[day] || [];
+      exercises.forEach((ex, idx) => {
+        const card = document.createElement("div");
+        card.className = "exercise-card";
 
-      data.forEach(item => {
-        const date = new Date(item.created_at).toLocaleDateString(undefined, {
-          month: 'short', day: 'numeric'
-        });
+        // Filter logged sets for this specific exercise
+        const loggedSets = cachedLogs.filter(l => l.exercise === ex.name);
 
-        const row = document.createElement('div');
-        row.className = 'log-item';
-        row.innerHTML = `
-          <div class="log-info">
-            <strong>${item.exercise}</strong>
-            <span>${item.weight} kg/lbs × ${item.reps} reps • ${date}</span>
+        card.innerHTML = `
+          <div class="exercise-header">
+            <span class="exercise-title">${ex.name}</span>
+            <span class="target-badge">${ex.target}</span>
           </div>
-          <button class="del-btn" onclick="deleteWorkout(${item.id})">✕</button>
+
+          <form onsubmit="handleLogSubmit(event, '${ex.name}')" class="log-row">
+            <input type="number" step="0.5" id="weight-${idx}" placeholder="Weight (kg/lbs)" required />
+            <input type="number" id="reps-${idx}" placeholder="Reps" required />
+            <button type="submit" class="btn-log">+ Set</button>
+          </form>
+
+          ${
+            loggedSets.length > 0 ? `
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Set</th>
+                  <th>Weight</th>
+                  <th>Reps</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${loggedSets.map((s, sIdx) => `
+                  <tr>
+                    <td>#${loggedSets.length - sIdx}</td>
+                    <td><strong>${s.weight}</strong></td>
+                    <td><strong>${s.reps}</strong></td>
+                    <td>${new Date(s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td>
+                    <td><button class="del-btn" onclick="deleteLog(${s.id})">✕</button></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            ` : ''
+          }
         `;
-        logList.appendChild(row);
+        list.appendChild(card);
       });
     }
 
-    // Add entry
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const exercise = document.getElementById('exercise').value.trim();
-      const weight = parseFloat(document.getElementById('weight').value);
-      const reps = parseInt(document.getElementById('reps').value, 10);
+    // 4. SUPABASE DATA HANDLERS
+    async function fetchLogs() {
+      const { data, error } = await db
+        .from('workout_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      const { error } = await db.from('workouts').insert([{ exercise, weight, reps }]);
-      if (error) alert(error.message);
-      else {
-        form.reset();
-        loadWorkouts();
+      if (!error && data) {
+        cachedLogs = data;
+        renderDay(currentDay);
       }
+    }
+
+    async function handleLogSubmit(e, exerciseName) {
+      e.preventDefault();
+      const form = e.target;
+      const weight = parseFloat(form.querySelector('input[id^="weight-"]').value);
+      const reps = parseInt(form.querySelector('input[id^="reps-"]').value, 10);
+
+      const { error } = await db.from('workout_logs').insert([
+        { day_type: currentDay, exercise: exerciseName, weight, reps }
+      ]);
+
+      if (error) {
+        alert("Failed to log set: " + error.message);
+      } else {
+        form.reset();
+        await fetchLogs();
+      }
+    }
+
+    async function deleteLog(id) {
+      const { error } = await db.from('workout_logs').delete().eq('id', id);
+      if (!error) {
+        await fetchLogs();
+      }
+    }
+
+    // 5. TAB SWITCHING
+    document.querySelectorAll('.day-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        renderDay(e.target.dataset.day);
+      });
     });
 
-    // Delete entry
-    window.deleteWorkout = async function(id) {
-      await db.from('workouts').delete().eq('id', id);
-      loadWorkouts();
-    };
-
-    loadWorkouts();
+    // Initial Load
+    fetchLogs();
   </script>
 </body>
 </html>
